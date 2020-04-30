@@ -17,6 +17,7 @@ enum VendingMachineError: Error {
     case productUnavailable
     case productStuck
     case insufficientFunds
+    case calculoDoTroco
 }
 
 extension VendingMachineError: LocalizedError {
@@ -30,13 +31,15 @@ extension VendingMachineError: LocalizedError {
             return "Falha ao entregar o produto"
         case .insufficientFunds:
             return "Dinheiro insuficiente"
+        case .calculoDoTroco:
+            return "Não foi possível retornar o troco"
         }
     }
 }
 
 class VendingMachine {
     private var estoque: [VendingMachineProduct]
-    private var money: Double
+    private var money: Double?
     
     init(products: [VendingMachineProduct]) {
         self.estoque = products
@@ -44,7 +47,7 @@ class VendingMachine {
     }
     
     func getProduct(named name: String, with money: Double) throws {
-        self.money += money
+        self.money? += money
 
         let produtoOptional = estoque.first { (produto) -> Bool in
             return produto.name == name
@@ -57,16 +60,15 @@ class VendingMachine {
         guard produto.price <= money else { throw VendingMachineError.insufficientFunds }
 
         produto.amount -= 1
-        self.money -= produto.price
+        self.money? -= produto.price
 
         if Int.random(in: 0...100) < 10 {
             throw VendingMachineError.productStuck
         }
     }
     
-    func getTroco() -> Double {
-
-        let money = self.money
+    func getTroco() throws -> Double {
+        guard let money = self.money else { throw VendingMachineError.calculoDoTroco }
         self.money = 0.0
 
         return money
@@ -88,6 +90,10 @@ do {
 } catch {
     print(error.localizedDescription)
 }
+
+/*
+ É possível fazer mais de um catch ou colocar um switch dentro do catch (mostra no exemplo abaixo)
+*/
 
 //do {
 //    try vendingMachine.getProduct(named: "Bala", with: 4.0)
